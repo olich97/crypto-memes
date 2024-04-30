@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 // https://docs.openzeppelin.com/contracts/5.x/erc1155
@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title Crypto Memes
  * @author Oleh Andrushko (https://olich.me)
- * @dev The contract for crypto memes platfrom (https://cryptomemes.olich.me): create, own, buy, get rewards and laugh
+ * @dev The contract for crypto memes platfrom (https://cryptomemes.olich.me): create, own, buy, get rewards and have fun
  */
 contract CryptoMeme is ERC1155, Ownable {
     // ID for fungible token used as coins on the platform
@@ -23,7 +23,6 @@ contract CryptoMeme is ERC1155, Ownable {
     // max memes hosted by the platfrom, just in case to be sure
     uint64 public MAX_MEMES_SUPPLY = type(uint64).max;
 
-
     /**
      * @dev Mapping form memeIs to info
      */
@@ -35,11 +34,6 @@ contract CryptoMeme is ERC1155, Ownable {
     uint256[] public memeIds;
 
     /**
-     * @dev Users addresses enabled to operate in the platform
-     */
-    mapping(address => bool) private _userEnabled;
-
-    /**
      * @dev Mapping enforcing unique hashes
      */
     mapping(bytes32 => bool) _hashExists;
@@ -49,30 +43,21 @@ contract CryptoMeme is ERC1155, Ownable {
      */
     struct MemeInfo {
         address owner;
-        uint256 createdAt;   // unix timestamp then meme was minted
-        uint256 price;      // in CMC
+        uint256 createdAt; // unix timestamp then meme was minted
+        uint256 price; // in CMC
         bool isForSale;
         uint256 id;
     }
- 
 
-    /**
-     * @dev Require msg.sender to be an authorized/enabled user
-     */
-    modifier onlyEnabledUser() {
-      require(_userEnabled[msg.sender] == true, "Caller is not an enabled user");
-      _;
-    }
+    constructor(
+        address initialOwner,
+        string memory _baseUri
+    ) ERC1155(_baseUri) Ownable(initialOwner) {}
 
-    constructor(address initialOwner, string memory  _baseUri) ERC1155(_baseUri) Ownable(initialOwner) {}
-    
     /**
      * @dev Sets base token uri
      */
-    function setURI(string memory _newUri) 
-        public 
-        onlyOwner 
-    {
+    function setURI(string memory _newUri) public onlyOwner {
         _setURI(_newUri);
     }
 
@@ -80,19 +65,19 @@ contract CryptoMeme is ERC1155, Ownable {
     |       Memes Management                 |
     |_______________________________________*/
 
-     /**
+    /**
      * @dev Mint a new meme nft
      * @param _hash meme hash (should be text + content sha256)
      * @param price meme starting price
      * @param isForSale set meme for sale
      */
-    function createMeme(bytes32 _hash, uint256 price, bool isForSale)
-        external
-        onlyEnabledUser
-    {
+    function createMeme(bytes32 _hash, uint256 price, bool isForSale) external {
         require(price > 0, "Starting price should be greater than 0");
         require(!_hashExists[_hash], "Meme was already created");
-        require(memeIds.length <= MAX_MEMES_SUPPLY, "Maximum meme supply reached");
+        require(
+            memeIds.length <= MAX_MEMES_SUPPLY,
+            "Maximum meme supply reached"
+        );
         // generate an unique id from the hash
         uint256 memeId = uint256(_hash);
         MemeInfo memory meme = MemeInfo({
@@ -101,39 +86,58 @@ contract CryptoMeme is ERC1155, Ownable {
             createdAt: block.timestamp,
             price: price,
             isForSale: isForSale
-        });     
+        });
         memeInfos[memeId] = meme;
         memeIds.push(memeId);
         // mark hash as used, for uniuque memes
         _hashExists[_hash] = true;
 
         // mint a unique meme NFT
-        _mint(msg.sender, memeId, 1, '');
+        _mint(msg.sender, memeId, 1, "");
         // reward creator with Meme Coins
-        _mint(msg.sender, MEME_COIN, MEME_CREATION_REWARD, 'MEME_CREATION_REWARD');
+        _mint(
+            msg.sender,
+            MEME_COIN,
+            MEME_CREATION_REWARD,
+            "MEME_CREATION_REWARD"
+        );
     }
 
-     /**
+    /**
      * @dev Buy a meme from onother user
      * @param memeId token id
      */
-    function buyMeme(uint256 memeId)
-        external
-        payable
-        onlyEnabledUser
-    {
+    function buyMeme(uint256 memeId) external payable {
         require(memeInfos[memeId].owner != address(0), "Meme does not exists");
-        require(memeInfos[memeId].owner != msg.sender, "Sender already owns current meme");
+        require(
+            memeInfos[memeId].owner != msg.sender,
+            "Sender already owns current meme"
+        );
         require(memeInfos[memeId].isForSale, "Meme is NOT for sale");
-        require(balanceOf(msg.sender, MEME_COIN) >= memeInfos[memeId].price, "Insufficient balance to buy meme");
+        require(
+            balanceOf(msg.sender, MEME_COIN) >= memeInfos[memeId].price,
+            "Insufficient balance to buy meme"
+        );
         require(msg.value == memeInfos[memeId].price, "Incorrect meme price");
-        // TODO: not following check-effects-interactions pattern (owner change should be done before transfers)
+        // TODO: reetrancy attack
 
         // transfer meme coins to the seller
-        _safeTransferFrom(msg.sender, memeInfos[memeId].owner, MEME_COIN, msg.value, 'CMC_TRANSFER');
+        _safeTransferFrom(
+            msg.sender,
+            memeInfos[memeId].owner,
+            MEME_COIN,
+            msg.value,
+            "CMC_TRANSFER"
+        );
         // transfer meme nft to buyer
-        _safeTransferFrom(memeInfos[memeId].owner, msg.sender, memeId, 1, 'MEME_TRANSFER');
-        // change the owner 
+        _safeTransferFrom(
+            memeInfos[memeId].owner,
+            msg.sender,
+            memeId,
+            1,
+            "MEME_TRANSFER"
+        );
+        // change the owner
         memeInfos[memeId].owner = msg.sender;
     }
 
@@ -141,25 +145,27 @@ contract CryptoMeme is ERC1155, Ownable {
      * @dev Set meme price
      * @param memeId token id
      */
-    function setMemePrice(uint256 memeId, uint256 price)
-        external
-    {
+    function setMemePrice(uint256 memeId, uint256 price) external {
         require(memeInfos[memeId].owner != address(0), "Meme does not exists");
         require(price > 0, "Starting price should be greater than 0");
-        require(memeInfos[memeId].owner == msg.sender, "Caller is not an owner of the meme");
+        require(
+            memeInfos[memeId].owner == msg.sender,
+            "Caller is not an owner of the meme"
+        );
 
         memeInfos[memeId].price = price;
     }
 
-     /**
+    /**
      * @dev Set/unset for sale
      * @param memeId token id
      */
-    function setMemeSale(uint256 memeId, bool isForSale)
-        external
-    {
-        require(memeInfos[memeId].owner != address(0), "Meme does not exists");       
-        require(memeInfos[memeId].owner == msg.sender, "Caller is not an owner of the meme");
+    function setMemeSale(uint256 memeId, bool isForSale) external {
+        require(memeInfos[memeId].owner != address(0), "Meme does not exists");
+        require(
+            memeInfos[memeId].owner == msg.sender,
+            "Caller is not an owner of the meme"
+        );
 
         memeInfos[memeId].isForSale = isForSale;
     }
@@ -167,65 +173,19 @@ contract CryptoMeme is ERC1155, Ownable {
     /**
      * @dev Get all memes in the platform
      */
-    function getMemes()
-        external
-        view
-        returns(MemeInfo[] memory)
-    {       
+    function getMemes() external view returns (MemeInfo[] memory) {
         MemeInfo[] memory result = new MemeInfo[](memeIds.length);
-        for (uint64 i = 0; i < memeIds.length; i++) 
-        {
+        for (uint64 i = 0; i < memeIds.length; i++) {
             result[i] = getMeme(memeIds[i]);
         }
         return result;
     }
 
-     /**
+    /**
      * @dev Get info about meme
      * @param memeId token id
      */
-    function getMeme(uint memeId)
-        public
-        view
-        returns(MemeInfo memory)
-    {
+    function getMeme(uint memeId) public view returns (MemeInfo memory) {
         return memeInfos[memeId];
-    }
-
-
-    /****************************************|
-    |       Users Management                 |
-    |_______________________________________*/
-
-    /**
-     * @dev Self registration to the platfrom
-     */
-    function signUp() 
-        external 
-    {
-        _userEnabled[msg.sender] = true;
-    }
-
-    /**
-     * @dev Disable an user
-     * @param user user address to disable
-     */
-    function disableUser(address user) 
-        external 
-        onlyOwner 
-    {
-        _userEnabled[user] = false;
-    }
-
-    /**
-     * @dev Returns user status
-     * @param user user address
-     */
-    function isUserEnabled(address user) 
-        external 
-        view
-        returns(bool) 
-    {
-        return _userEnabled[user];
     }
 }

@@ -52,10 +52,6 @@ describe("Crypt Meme Contract", function () {
 		const memeId2 = BigInt(memeHash);
 
 		beforeEach(async () => {
-			// need to sign up into the platform
-			await memeContract.connect(nftOwner1).signUp();
-			await memeContract.connect(nftOwner2).signUp();
-			await memeContract.connect(contractOwner).signUp();
 			expect(
 				await memeContract.connect(nftOwner1).createMeme(memeHash, 10, true),
 			)
@@ -87,7 +83,6 @@ describe("Crypt Meme Contract", function () {
 			const meme = await memeContract.getMeme(memeId);
 			expect(meme.owner).to.equal(nftOwner1.address);
 		});
-
 		it("should set list", async function () {
 			const memes = await memeContract.getMemes();
 			expect(memes[0].id).to.equal(memeId);
@@ -100,7 +95,6 @@ describe("Crypt Meme Contract", function () {
 				memeContract.connect(nftOwner1).createMeme(memeHash, 10, false),
 			).to.eventually.be.rejectedWith("Meme was already created");
 		});
-
 		it("should set memes array", async function () {
 			await memeContract.connect(nftOwner2).createMeme(memeHash2, 100, true);
 			const memes = await memeContract.getMemes();
@@ -118,12 +112,6 @@ describe("Crypt Meme Contract", function () {
 			const meme = await memeContract.getMeme(memeId);
 			expect(meme.isForSale).to.equal(false);
 		});
-
-		it("should disable user", async function () {
-			await memeContract.connect(contractOwner).disableUser(nftOwner1.address);
-			const isUserEnable = await memeContract.isUserEnabled(nftOwner1.address);
-			expect(isUserEnable).to.equal(false);
-		});
 	});
 
 	describe("Transfers", function () {
@@ -138,9 +126,6 @@ describe("Crypt Meme Contract", function () {
 		const memeId2 = BigInt(memeHash);
 
 		beforeEach(async () => {
-			// need to sign up into the platform
-			await memeContract.connect(nftOwner1).signUp();
-			await memeContract.connect(nftOwner2).signUp();
 			await memeContract.connect(nftOwner2).createMeme(memeHash, 10, true);
 		});
 
