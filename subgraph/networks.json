@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "CryptoMeme": {
+      "address": "0x9258a9793340fA7F6b4542d4EaC51d94487B1C74",
+      "startBlock": 5811071
+    }
+  }
+}

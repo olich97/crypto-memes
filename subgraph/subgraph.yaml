@@ -1,0 +1,50 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: CryptoMeme
+    network: sepolia
+    source:
+      address: "0x9258a9793340fA7F6b4542d4EaC51d94487B1C74"
+      abi: CryptoMeme
+      startBlock: 5811071
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ApprovalForAll
+        - MemeCreated
+        - MemePriceChanged
+        - MemePurchased
+        - MemeSaleStatusChanged
+        - OwnershipTransferred
+        - TransferBatch
+        - TransferSingle
+        - URI
+      abis:
+        - name: CryptoMeme
+          file: ./abis/CryptoMeme.json
+      eventHandlers:
+        - event: ApprovalForAll(indexed address,indexed address,bool)
+          handler: handleApprovalForAll
+        - event: MemeCreated(indexed uint256,indexed address,bool,uint256,uint256,string)
+          handler: handleMemeCreated
+        - event: MemePriceChanged(indexed uint256,uint256)
+          handler: handleMemePriceChanged
+        - event: MemePurchased(indexed uint256,indexed address)
+          handler: handleMemePurchased
+        - event: MemeSaleStatusChanged(indexed uint256,bool)
+          handler: handleMemeSaleStatusChanged
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleTransferBatch
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle
+        - event: URI(string,indexed uint256)
+          handler: handleURI
+      file: ./src/crypto-meme.ts
