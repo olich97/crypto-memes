@@ -2,7 +2,6 @@ import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import cryptoMemeArtifact from "../artifacts/contracts/CryptoMeme.sol/CryptoMeme.json";
 import { CryptoMeme } from "../typechain-types/contracts/CryptoMeme";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { ZeroAddress, keccak256, toUtf8Bytes } from "ethers";
@@ -28,7 +27,6 @@ describe("Crypt Meme Contract", function () {
 		);
 		memeContract = (await CryptoMemeFactory.deploy(
 			contractOwner,
-			"my.uri",
 		)) as unknown as CryptoMeme;
 	});
 
@@ -53,10 +51,12 @@ describe("Crypt Meme Contract", function () {
 
 		beforeEach(async () => {
 			expect(
-				await memeContract.connect(nftOwner1).createMeme(memeHash, 10, true),
+				await memeContract
+					.connect(nftOwner1)
+					.createMeme(memeHash, 10, true, "my.uri"),
 			)
-				.to.emit(memeContract, "TransferSingle")
-				.withArgs(nftOwner1.address, ZeroAddress, nftOwner1.address, memeId, 1);
+				.to.emit(memeContract, "MemeCreated")
+				.withArgs(memeId, nftOwner1.address, 10, true, "my.uri");
 		});
 
 		it("should set reward", async function () {
@@ -64,9 +64,9 @@ describe("Crypt Meme Contract", function () {
 			expect(memeCoins).to.equal(100);
 		});
 
-		it("should set uri", async function () {
-			const uri = await memeContract.uri(memeId);
-			expect(uri).to.equal("my.uri");
+		it("should set contentUri", async function () {
+			const meme = await memeContract.getMeme(memeId);
+			expect(meme.contentUri).to.equal("my.uri");
 		});
 
 		it("should set price", async function () {
@@ -83,6 +83,7 @@ describe("Crypt Meme Contract", function () {
 			const meme = await memeContract.getMeme(memeId);
 			expect(meme.owner).to.equal(nftOwner1.address);
 		});
+
 		it("should set list", async function () {
 			const memes = await memeContract.getMemes();
 			expect(memes[0].id).to.equal(memeId);
@@ -92,11 +93,16 @@ describe("Crypt Meme Contract", function () {
 
 		it("should fail if create with the same hash", async function () {
 			await expect(
-				memeContract.connect(nftOwner1).createMeme(memeHash, 10, false),
+				memeContract
+					.connect(nftOwner1)
+					.createMeme(memeHash, 10, false, "my.uri"),
 			).to.eventually.be.rejectedWith("Meme was already created");
 		});
+
 		it("should set memes array", async function () {
-			await memeContract.connect(nftOwner2).createMeme(memeHash2, 100, true);
+			await memeContract
+				.connect(nftOwner2)
+				.createMeme(memeHash2, 100, true, "my.uri");
 			const memes = await memeContract.getMemes();
 			expect(memes.length).to.equal(2);
 		});
@@ -126,7 +132,9 @@ describe("Crypt Meme Contract", function () {
 		const memeId2 = BigInt(memeHash);
 
 		beforeEach(async () => {
-			await memeContract.connect(nftOwner2).createMeme(memeHash, 10, true);
+			await memeContract
+				.connect(nftOwner2)
+				.createMeme(memeHash, 10, true, "my.uri");
 		});
 
 		it("should fail if not enough balance", async function () {
@@ -139,7 +147,9 @@ describe("Crypt Meme Contract", function () {
 
 		it("should buy meme", async function () {
 			// just for reward
-			await memeContract.connect(nftOwner1).createMeme(memeHash2, 10, true);
+			await memeContract
+				.connect(nftOwner1)
+				.createMeme(memeHash2, 10, true, "my.uri");
 
 			await memeContract.connect(nftOwner1).buyMeme(memeId, { value: 10 });
 
@@ -158,6 +168,15 @@ describe("Crypt Meme Contract", function () {
 			// check new owner
 			const meme = await memeContract.getMeme(memeId);
 			expect(meme.owner).to.equal(nftOwner1.address);
+		});
+
+		it("test example data", async function () {
+			const memeHash = keccak256(
+				toUtf8Bytes("When my workaround is dirty but it works"),
+			);
+			console.log(memeHash);
+			const memeId = BigInt(memeHash).toString();
+			console.log(memeId);
 		});
 	});
 });

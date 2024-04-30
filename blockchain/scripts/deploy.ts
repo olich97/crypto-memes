@@ -1,10 +1,11 @@
 import { ethers } from "hardhat";
+import { vars } from "hardhat/config";
 
 async function main() {
 	// We get the contract to deploy
 	const cryptoMeme = await ethers.getContractFactory("CryptoMeme");
-	const owner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-	const meme = await cryptoMeme.deploy(owner, "{id}.json");
+	const owner = vars.get("CONTRACT_OWNER");
+	const meme = await cryptoMeme.deploy(owner);
 
 	await meme.waitForDeployment();
 

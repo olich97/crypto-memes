@@ -6,7 +6,9 @@ The main purposes of a smart contract are:
 - You can create new unique NFTs of memes and get a reward for the creation in CMC tokens
 - You can set/unset your memes for sell
 - You can buy memes with CMC tokens
-  
+
+Deployed contract: https://sepolia.etherscan.io/address/0x9258a9793340fA7F6b4542d4EaC51d94487B1C74
+
 Built ❤️ with:
 - [Hardhat](https://hardhat.org/): compile, run, and test smart contracts
 - [Biome](https://biomejs.dev/): format, lint, and more for JavaScript
@@ -42,11 +44,15 @@ yarn run compile
 ```shell
 # local chain
 yarn run deploy:local
-# sepolia
+
+# Sepolia:
+    # 1. Set variables
+npx hardhat vars setup
+    # 2. Deploy
 yarn run deploy:sepolia
 ```
 - Verify smart contract:
 ```shell
-# local chain
-npx hardhat verify "<CONTRACT ADDRESS>" --network sepolia
+# sepolia chain
+npx hardhat verify "<CONTRACT ADDRESS>" --network sepolia "<CONTRACT OWNER ADDRESS>"
 ```

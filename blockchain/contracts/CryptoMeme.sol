@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title Crypto Memes
  * @author Oleh Andrushko (https://olich.me)
- * @dev The contract for crypto memes platfrom (https://cryptomemes.olich.me): create, own, buy, get rewards and have fun
+ * @dev The contract for crypto memes platfrom (https://cryptomemes.olich.me): create, own, buy, get rewards
  */
 contract CryptoMeme is ERC1155, Ownable {
     // ID for fungible token used as coins on the platform
@@ -42,24 +42,62 @@ contract CryptoMeme is ERC1155, Ownable {
      * @dev Main Meme Object
      */
     struct MemeInfo {
-        address owner;
-        uint256 createdAt; // unix timestamp then meme was minted
-        uint256 price; // in CMC
-        bool isForSale;
         uint256 id;
+        address owner;
+        uint256 price; // in CMC
+        uint256 createdAt; // unix timestamp then meme was minted
+        bool isForSale;
+        string contentUri;
     }
 
-    constructor(
-        address initialOwner,
-        string memory _baseUri
-    ) ERC1155(_baseUri) Ownable(initialOwner) {}
+    /*****************************|
+    |       Events                |
+    |____________________________*/
 
     /**
-     * @dev Sets base token uri
+     * @dev Emitted when a new meme is created.
+     *
+     * @param memeId The newly created meme's token ID.
+     * @param owner The owner of newly created meme token.
+     * @param isForSale Meme is for sale or not.
+     * @param price The starting price for the meme.
+     * @param createdAt The unix timestamp when the meme was created.
+     * @param contentUri The content URI of the meme.
      */
-    function setURI(string memory _newUri) public onlyOwner {
-        _setURI(_newUri);
-    }
+    event MemeCreated(
+        uint256 indexed memeId,
+        address indexed owner,
+        bool isForSale,
+        uint256 price,
+        uint256 createdAt,
+        string contentUri
+    );
+
+    /**
+     * @dev Emitted when a meme is purchased.
+     * 
+     * @param memeId The purchased meme's token ID.
+     * @param buyer The buyer of the purchased meme.
+     */
+    event MemePurchased(uint256 indexed memeId, address indexed buyer);
+
+    /**
+     * @dev Emitted when a meme price is changed.
+     *
+     * @param memeId The meme's token ID.
+     * @param newPrice The new price for the meme.
+     */
+    event MemePriceChanged(uint256 indexed memeId, uint256 newPrice);
+
+    /**
+     * @dev Emitted when a meme changes its sale status.
+     *
+     * @param memeId The meme's token ID.
+     * @param isForSale Meme is for sale or not.
+     */
+    event MemeSaleStatusChanged(uint256 indexed memeId, bool isForSale);
+
+    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
 
     /****************************************|
     |       Memes Management                 |
@@ -70,8 +108,14 @@ contract CryptoMeme is ERC1155, Ownable {
      * @param _hash meme hash (should be text + content sha256)
      * @param price meme starting price
      * @param isForSale set meme for sale
+     * @param contentUri meme content
      */
-    function createMeme(bytes32 _hash, uint256 price, bool isForSale) external {
+    function createMeme(
+        bytes32 _hash,
+        uint256 price,
+        bool isForSale,
+        string memory contentUri
+    ) external {
         require(price > 0, "Starting price should be greater than 0");
         require(!_hashExists[_hash], "Meme was already created");
         require(
@@ -85,7 +129,8 @@ contract CryptoMeme is ERC1155, Ownable {
             owner: msg.sender,
             createdAt: block.timestamp,
             price: price,
-            isForSale: isForSale
+            isForSale: isForSale,
+            contentUri: contentUri
         });
         memeInfos[memeId] = meme;
         memeIds.push(memeId);
@@ -101,6 +146,8 @@ contract CryptoMeme is ERC1155, Ownable {
             MEME_CREATION_REWARD,
             "MEME_CREATION_REWARD"
         );
+
+        emit MemeCreated(memeId, msg.sender, isForSale, price, block.timestamp, contentUri);
     }
 
     /**
@@ -139,6 +186,8 @@ contract CryptoMeme is ERC1155, Ownable {
         );
         // change the owner
         memeInfos[memeId].owner = msg.sender;
+
+        emit MemePurchased(memeId, msg.sender);
     }
 
     /**
@@ -154,6 +203,8 @@ contract CryptoMeme is ERC1155, Ownable {
         );
 
         memeInfos[memeId].price = price;
+
+        emit MemePriceChanged(memeId, price);
     }
 
     /**
@@ -168,6 +219,8 @@ contract CryptoMeme is ERC1155, Ownable {
         );
 
         memeInfos[memeId].isForSale = isForSale;
+
+        emit MemeSaleStatusChanged(memeId, isForSale);
     }
 
     /**

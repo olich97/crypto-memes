@@ -1,6 +1,6 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
-import { HardhatUserConfig } from "hardhat/config";
+import { HardhatUserConfig, vars } from "hardhat/config";
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -17,17 +17,16 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		sepolia: {
-			url: process.env.SEPOLIA_URL_URL || "",
-			accounts:
-				process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			url: vars.get("SEPOLIA_URL"),
+			accounts: [vars.get("PRIVATE_KEY")],
 		},
 	},
 	gasReporter: {
-		enabled: process.env.REPORT_GAS !== undefined,
-		coinmarketcap: process.env.REPORT_GAS_COIN_MARKET_CAP_KEY || "",
+		enabled: vars.get("REPORT_GAS") !== undefined,
+		coinmarketcap: vars.get("REPORT_GAS_COIN_MARKET_CAP_KEY", ""),
 	},
 	etherscan: {
-		apiKey: process.env.ETHERSCAN_API_KEY,
+		apiKey: vars.get("ETHERSCAN_API_KEY"),
 	},
 };
 
