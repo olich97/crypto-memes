@@ -16,13 +16,17 @@ export function handleMemeCreated(event: MemeCreatedEvent): void {
   entity.createdAt = event.params.createdAt;
   entity.updatedAt = event.block.timestamp;
   entity.contentUri = event.params.contentUri;
-  entity.save();
   // trigger MemeContent file data template with IPFS hash
   // https://thegraph.com/docs/en/developing/creating-a-subgraph/#file-data-sources
   let ipfsIndex = entity.contentUri.indexOf('/ipfs/');
+  let ipfsHash = entity.contentUri.substr(ipfsIndex + 6);
+  // map the hash to content field so we can mantain relationship with MemeContent entity
+  entity.content = ipfsHash;
+  entity.save();
+  // we can exit and not trigger the template if the hash is something different than ipfs
   if (ipfsIndex == -1) return;
-  let hash = entity.contentUri.substr(ipfsIndex + 6);
-  MemeContentTemplate.create(hash);
+
+  MemeContentTemplate.create(ipfsHash);
 }
 
 export function handleMemePriceChanged(event: MemePriceChangedEvent): void {
