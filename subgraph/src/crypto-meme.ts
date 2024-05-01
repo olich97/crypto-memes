@@ -17,7 +17,7 @@ export function handleMemeCreated(event: MemeCreatedEvent): void {
   entity.updatedAt = event.block.timestamp;
   entity.contentUri = event.params.contentUri;
   entity.save();
-  // trigger MemeContent file datatemplate with IPFS hash
+  // trigger MemeContent file data template with IPFS hash
   // https://thegraph.com/docs/en/developing/creating-a-subgraph/#file-data-sources
   let ipfsIndex = entity.contentUri.indexOf('/ipfs/');
   if (ipfsIndex == -1) return;
@@ -58,7 +58,7 @@ export function handleMemeSaleStatusChanged(
 
 export function handleMemeContent(content: Bytes): void {
   let contentUri = dataSource.stringParam();
-  // create a new meme content entity with contetnUri as ID
+  // create a new meme content entity with CID as ID
   let memeContent = new MemeContent(contentUri);
   // read json content of the file
   const value = json.fromBytes(content).toObject();

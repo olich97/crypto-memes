@@ -172,7 +172,7 @@ describe("Crypt Meme Contract", function () {
 
 		it("test example data", async function () {
 			const memeHash = keccak256(
-				toUtf8Bytes("When my workaround is dirty but it works"),
+				toUtf8Bytes("When my workaround is dirty but it works..."),
 			);
 			console.log(memeHash);
 			const memeId = BigInt(memeHash).toString();
