@@ -1,161 +1,74 @@
+import { Bytes, dataSource, json } from "@graphprotocol/graph-ts";
 import {
-  ApprovalForAll as ApprovalForAllEvent,
   MemeCreated as MemeCreatedEvent,
   MemePriceChanged as MemePriceChangedEvent,
   MemePurchased as MemePurchasedEvent,
   MemeSaleStatusChanged as MemeSaleStatusChangedEvent,
-  OwnershipTransferred as OwnershipTransferredEvent,
-  TransferBatch as TransferBatchEvent,
-  TransferSingle as TransferSingleEvent,
-  URI as URIEvent
-} from "../generated/CryptoMeme/CryptoMeme"
-import {
-  ApprovalForAll,
-  MemeCreated,
-  MemePriceChanged,
-  MemePurchased,
-  MemeSaleStatusChanged,
-  OwnershipTransferred,
-  TransferBatch,
-  TransferSingle,
-  URI
-} from "../generated/schema"
-
-export function handleApprovalForAll(event: ApprovalForAllEvent): void {
-  let entity = new ApprovalForAll(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.account = event.params.account
-  entity.operator = event.params.operator
-  entity.approved = event.params.approved
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
+} from "../generated/CryptoMeme/CryptoMeme";
+import { Meme, MemeContent } from "../generated/schema";
+import { MemeContent as MemeContentTemplate } from "../generated/templates";
 
 export function handleMemeCreated(event: MemeCreatedEvent): void {
-  let entity = new MemeCreated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.memeId = event.params.memeId
-  entity.owner = event.params.owner
-  entity.isForSale = event.params.isForSale
-  entity.price = event.params.price
-  entity.createdAt = event.params.createdAt
-  entity.contentUri = event.params.contentUri
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  let entity = new Meme(Bytes.fromUTF8(event.params.memeId.toString()));
+  entity.owner = event.params.owner;
+  entity.isForSale = event.params.isForSale;
+  entity.price = event.params.price;
+  entity.createdAt = event.params.createdAt;
+  entity.updatedAt = event.block.timestamp;
+  entity.contentUri = event.params.contentUri;
+  entity.save();
+  // trigger MemeContent file datatemplate with IPFS hash
+  // https://thegraph.com/docs/en/developing/creating-a-subgraph/#file-data-sources
+  let ipfsIndex = entity.contentUri.indexOf('/ipfs/');
+  if (ipfsIndex == -1) return;
+  let hash = entity.contentUri.substr(ipfsIndex + 6);
+  MemeContentTemplate.create(hash);
 }
 
 export function handleMemePriceChanged(event: MemePriceChangedEvent): void {
-  let entity = new MemePriceChanged(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.memeId = event.params.memeId
-  entity.newPrice = event.params.newPrice
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  let entity = Meme.load(Bytes.fromUTF8(event.params.memeId.toString()));
+  if (entity) {
+    entity.price = event.params.newPrice;
+    entity.updatedAt = event.block.timestamp;
+    entity.save();
+  }
 }
 
 export function handleMemePurchased(event: MemePurchasedEvent): void {
-  let entity = new MemePurchased(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.memeId = event.params.memeId
-  entity.buyer = event.params.buyer
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  let entity = Meme.load(Bytes.fromUTF8(event.params.memeId.toString()));
+  if (entity) {
+    // change the owner of meme
+    entity.owner = event.params.buyer;
+    entity.updatedAt = event.block.timestamp;
+    entity.save();
+    // TODO: additionally we can track the price of this sell
+  }
 }
 
 export function handleMemeSaleStatusChanged(
   event: MemeSaleStatusChangedEvent
 ): void {
-  let entity = new MemeSaleStatusChanged(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.memeId = event.params.memeId
-  entity.isForSale = event.params.isForSale
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  let entity = Meme.load(Bytes.fromUTF8(event.params.memeId.toString()));
+  if (entity) {
+    entity.isForSale = event.params.isForSale;
+    entity.updatedAt = event.block.timestamp;
+    entity.save();
+  }
 }
 
-export function handleOwnershipTransferred(
-  event: OwnershipTransferredEvent
-): void {
-  let entity = new OwnershipTransferred(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.previousOwner = event.params.previousOwner
-  entity.newOwner = event.params.newOwner
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleTransferBatch(event: TransferBatchEvent): void {
-  let entity = new TransferBatch(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.operator = event.params.operator
-  entity.from = event.params.from
-  entity.to = event.params.to
-  entity.ids = event.params.ids
-  entity.values = event.params.values
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleTransferSingle(event: TransferSingleEvent): void {
-  let entity = new TransferSingle(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.operator = event.params.operator
-  entity.from = event.params.from
-  entity.to = event.params.to
-  entity.CryptoMeme_id = event.params.id
-  entity.value = event.params.value
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleURI(event: URIEvent): void {
-  let entity = new URI(event.transaction.hash.concatI32(event.logIndex.toI32()))
-  entity.value = event.params.value
-  entity.CryptoMeme_id = event.params.id
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+export function handleMemeContent(content: Bytes): void {
+  let contentUri = dataSource.stringParam();
+  // create a new meme content entity with contetnUri as ID
+  let memeContent = new MemeContent(contentUri);
+  // read json content of the file
+  const value = json.fromBytes(content).toObject();
+  if (value) {
+    const text = value.get("text");
+    const mediaUrl = value.get("mediaUrl");
+    if (text && mediaUrl) {
+      memeContent.text = text.toString();
+      memeContent.mediaUrl = mediaUrl.toString();
+    }
+    memeContent.save();
+  }
 }

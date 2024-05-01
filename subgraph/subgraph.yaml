@@ -16,21 +16,11 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - ApprovalForAll
-        - MemeCreated
-        - MemePriceChanged
-        - MemePurchased
-        - MemeSaleStatusChanged
-        - OwnershipTransferred
-        - TransferBatch
-        - TransferSingle
-        - URI
+        - Meme
       abis:
         - name: CryptoMeme
           file: ./abis/CryptoMeme.json
       eventHandlers:
-        - event: ApprovalForAll(indexed address,indexed address,bool)
-          handler: handleApprovalForAll
         - event: MemeCreated(indexed uint256,indexed address,bool,uint256,uint256,string)
           handler: handleMemeCreated
         - event: MemePriceChanged(indexed uint256,uint256)
@@ -39,12 +29,21 @@ dataSources:
           handler: handleMemePurchased
         - event: MemeSaleStatusChanged(indexed uint256,bool)
           handler: handleMemeSaleStatusChanged
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
-        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
-          handler: handleTransferBatch
-        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
-          handler: handleTransferSingle
-        - event: URI(string,indexed uint256)
-          handler: handleURI
       file: ./src/crypto-meme.ts
+
+templates:
+  - name: MemeContent
+    kind: file/ipfs
+    mapping:
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/crypto-meme.ts
+      handler: handleMemeContent
+      entities:
+        - MemeContent
+      abis:
+        - name: CryptoMeme
+          file: ./abis/CryptoMeme.json
+
+features:
+    - fullTextSearch
